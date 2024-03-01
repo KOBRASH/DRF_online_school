@@ -1,14 +1,18 @@
 import django_filters
-from rest_framework import viewsets, generics, permissions
+from rest_framework import viewsets, generics, permissions, mixins, status
 from rest_framework.permissions import IsAuthenticated
-from .models import Course, Lesson, Payment
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from .models import Course, Lesson, Payment, Subscription
+from .paginators import CourseLessonPaginator
 from .permissions import IsModerator, IsOwner
-from .serializers import CourseSerializer, LessonSerializer, PaymentSerializer
+from .serializers import CourseSerializer, LessonSerializer, PaymentSerializer, SubscriptionSerializer
 
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    pagination_class = CourseLessonPaginator
 
     def get_permissions(self):
 
@@ -37,6 +41,7 @@ class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     queryset = Lesson.objects.all()
     permission_classes = [IsAuthenticated]
+    pagination_class = CourseLessonPaginator
 
 
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
@@ -72,3 +77,32 @@ class PaymentListView(generics.ListAPIView):
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
     filterset_class = PaymentFilter
     permission_classes = [IsAuthenticated]
+
+
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    serializer_class = SubscriptionSerializer
+    queryset = Subscription.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def subscribe(self, request, pk=None):
+        course = Course.objects.get(pk=pk)
+        user = request.user
+
+        if not Subscription.objects.filter(user=user, course=course).exists():
+            Subscription.objects.create(user=user, course=course)
+            return Response({'detail': 'Подписка успешно установлена.'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'detail': 'Подписка уже установлена.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def unsubscribe(self, request, pk=None):
+        course = Course.objects.get(pk=pk)
+        user = request.user
+
+        subscription = Subscription.objects.filter(user=user, course=course).first()
+        if subscription:
+            subscription.delete()
+            return Response({'detail': 'Подписка успешно отменена.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'detail': 'Подписка не найдена.'}, status=status.HTTP_404_NOT_FOUND)

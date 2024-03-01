@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Course, Lesson, Payment
+from .models import Course, Lesson, Payment, Subscription
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'subscribed_at')
+    search_fields = ('user__email', 'course__title')  # Предполагая, что у пользователя есть поле email
 
 
 @admin.register(Course)
