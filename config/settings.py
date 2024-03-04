@@ -34,7 +34,8 @@ INSTALLED_APPS = [
     'django_filters',
     'users',
     'school',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'drf-yasg'
 ]
 
 MIDDLEWARE = [
