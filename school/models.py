@@ -33,10 +33,13 @@ class Lesson(models.Model):
 class Payment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     payment_date = models.DateTimeField(auto_now_add=True)
-    course_or_lesson = models.ForeignKey('Course', on_delete=models.CASCADE, blank=True, null=True)
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, blank=True, null=True)
     lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=[('cash', 'Наличные'), ('transfer', 'Перевод')])
+    stripe_product_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_price_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_session_id = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f'{self.user.username} - {self.payment_date}'
@@ -44,6 +47,8 @@ class Payment(models.Model):
     class Meta:
         verbose_name = 'платеж'
         verbose_name_plural = 'платежи'
+
+
 
 
 class Subscription(models.Model):

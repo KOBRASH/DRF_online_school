@@ -1,4 +1,5 @@
 import django_filters
+from django.shortcuts import redirect
 from rest_framework import viewsets, generics, permissions, mixins, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -6,7 +7,9 @@ from rest_framework.decorators import action
 from .models import Course, Lesson, Payment, Subscription
 from .paginators import CourseLessonPaginator
 from .permissions import IsModerator, IsOwner
-from .serializers import CourseSerializer, LessonSerializer, PaymentSerializer, SubscriptionSerializer
+from .serializers import CourseSerializer, LessonSerializer, PaymentSerializer, SubscriptionSerializer, \
+    PaymentCreateSerializer
+from .services import create_product, create_price, create_session
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -66,7 +69,7 @@ class PaymentFilter(django_filters.FilterSet):
         model = Payment
         fields = {
             'payment_date': ['exact', 'gt', 'lt'],
-            'course_or_lesson': ['exact'],
+            'course': ['exact'],
             'payment_method': ['exact'],
         }
 
@@ -77,6 +80,12 @@ class PaymentListView(generics.ListAPIView):
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
     filterset_class = PaymentFilter
     permission_classes = [IsAuthenticated]
+
+
+class PaymentCreateView(generics.CreateAPIView):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentCreateSerializer
+
 
 
 class SubscriptionViewSet(viewsets.ModelViewSet):

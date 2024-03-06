@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     'users',
     'school',
     'rest_framework.authtoken',
-    'drf-yasg',
+    'drf_yasg',
     'corsheaders',
 ]
 
@@ -154,7 +154,7 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    '*',  # Замените на адрес вашего фронтенд-сервера
+    'http://localhost:8000',  # Замените на адрес вашего фронтенд-сервера
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -163,3 +163,5 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
+
+STRIPE_KEY = os.getenv('STRIPE_KEY')

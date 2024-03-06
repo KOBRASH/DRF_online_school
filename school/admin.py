@@ -32,5 +32,5 @@ class LessonAdmin(admin.ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ('user', 'payment_date', 'course_or_lesson', 'amount', 'payment_method')
-    search_fields = ('user__username', 'course_or_lesson__title')
+    list_display = ('user', 'payment_date', 'course', 'amount', 'payment_method')
+    search_fields = ('user__username', 'course__title')
