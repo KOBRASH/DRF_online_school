@@ -1,25 +1,49 @@
 from django.shortcuts import redirect
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
 from .models import Course, Lesson, Payment, Subscription
 from .services import create_product, create_price, create_session
 from .validators import YoutubeValidator
 
 
 class LessonSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(
+        default=serializers.CurrentUserDefault(),
+    )
 
     class Meta:
         model = Lesson
-        fields = ['id', 'title', 'description', 'preview_image', 'video_link', 'course', 'user']
+        fields = ['id', 'title', 'description', 'preview_image', 'video_link', 'course', 'user', 'product_id']
         validators = [YoutubeValidator(field='video_link')]
+        read_only_fields = ('product_id', 'user')
+
+
+    def create(self, validated_data):
+        lesson = super().create(validated_data)
+        lesson.product_id=create_product(lesson)
+        lesson.save()
+        return lesson
 
 
 class CourseSerializer(serializers.ModelSerializer):
     lessons_count = serializers.SerializerMethodField()
+    user = serializers.HiddenField(
+        default=serializers.CurrentUserDefault(),
+    )
     lessons = LessonSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'preview_image', 'description', 'lessons_count', 'lessons', 'user']
+        fields = ['id', 'title', 'preview_image', 'description', 'lessons_count', 'lessons', 'user', 'product_id']
+        read_only_fields=('product_id', 'user')
+
+
+    def create(self, validated_data):
+        course = super().create(validated_data)
+        course.product_id=create_product(course)
+        course.save()
+        return course
 
     def get_lessons_count(self, obj):
         return obj.lessons.count()
@@ -41,10 +65,21 @@ class PaymentCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Извлекаем данные из запроса
         amount = validated_data['amount']
-        course = validated_data['course']
+        course = validated_data.get('course')
+        lesson = validated_data.get('lesson')
 
-        # Создаем продукт в Stripe
-        product_id = create_product(course)
+        if course and not lesson:
+            product = course
+        elif lesson and not course:
+            product = lesson
+        else:
+            raise ValidationError('Платеж создается только для курса или урока!')
+
+        product_id = product.product_id
+        if not product_id:
+            product_id = create_product(product)
+            product.product_id = product_id
+            product.save()
 
         # Создаем цену в Stripe
         price_id = create_price(product_id, amount)
@@ -55,11 +90,10 @@ class PaymentCreateSerializer(serializers.ModelSerializer):
         # Сохраняем информацию в базе данных
         payment = Payment.objects.create(
             user=self.context['request'].user,
-            course=validated_data.get('course'),
-            lesson=validated_data.get('lesson'),
+            course=course,
+            lesson=lesson,
             amount=amount,
-            payment_method=validated_data.get('payment_method'),
-            stripe_product_id=product_id,
+            payment_method=validated_data['payment_method'],
             stripe_price_id=price_id,
             stripe_session_id=session_id
         )

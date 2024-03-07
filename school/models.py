@@ -2,8 +2,16 @@ from django.db import models
 from users.models import User
 
 
-class Course(models.Model):
+class Product(models.Model):
     title = models.CharField(max_length=255)
+    product_id = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+
+class Course(Product):
+
     preview_image = models.ImageField(upload_to='course_previews/', blank=True, null=True)
     description = models.TextField()
     user = models.ForeignKey(User, related_name='courses', on_delete=models.CASCADE)
@@ -13,8 +21,8 @@ class Course(models.Model):
         verbose_name_plural = 'курсы'
 
 
-class Lesson(models.Model):
-    title = models.CharField(max_length=255)
+class Lesson(Product):
+
     description = models.TextField()
     preview_image = models.ImageField(upload_to='lesson_previews/', blank=True, null=True)
     video_link = models.URLField()
@@ -37,7 +45,6 @@ class Payment(models.Model):
     lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=[('cash', 'Наличные'), ('transfer', 'Перевод')])
-    stripe_product_id = models.CharField(max_length=255, blank=True, null=True)
     stripe_price_id = models.CharField(max_length=255, blank=True, null=True)
     stripe_session_id = models.TextField(blank=True, null=True)
 

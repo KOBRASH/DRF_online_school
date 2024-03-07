@@ -1,11 +1,10 @@
 from config.settings import STRIPE_KEY
-from .models import Course
 import stripe
 stripe.api_key = STRIPE_KEY
 
 
-def create_product(course):
-    product = stripe.Product.create(name=course.title)
+def create_product(product):
+    product = stripe.Product.create(name=product.title)
     return product['id']
 
 
