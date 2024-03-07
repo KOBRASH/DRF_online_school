@@ -9,7 +9,7 @@ from .paginators import CourseLessonPaginator
 from .permissions import IsModerator, IsOwner
 from .serializers import CourseSerializer, LessonSerializer, PaymentSerializer, SubscriptionSerializer, \
     PaymentCreateSerializer
-from .services import create_product, create_price, create_session
+from school.tasks import send_course_update_email
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -32,7 +32,6 @@ class CourseViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated, IsOwner]
 
         return [permission() for permission in permission_classes]
-
 
 
 class LessonCreateAPIView(generics.CreateAPIView):
@@ -87,7 +86,6 @@ class PaymentCreateView(generics.CreateAPIView):
     serializer_class = PaymentCreateSerializer
 
 
-
 class SubscriptionViewSet(viewsets.ModelViewSet):
     serializer_class = SubscriptionSerializer
     queryset = Subscription.objects.all()
@@ -100,6 +98,9 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
         if not Subscription.objects.filter(user=user, course=course).exists():
             Subscription.objects.create(user=user, course=course)
+
+            send_course_update_email.delay(user.email, course.title)
+
             return Response({'detail': 'Подписка успешно установлена.'}, status=status.HTTP_201_CREATED)
         else:
             return Response({'detail': 'Подписка уже установлена.'}, status=status.HTTP_400_BAD_REQUEST)
