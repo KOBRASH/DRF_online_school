@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'drf_yasg',
     'corsheaders',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -137,6 +138,18 @@ CACHES = {
     }
 }
 
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+    EMAIL_FILE_PATH = BASE_DIR.joinpath('debug_emails')
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.yandex.ru'
+    EMAIL_PORT = 465
+    EMAIL_USE_SSL = True
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 # Настройки JWT-токенов
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -184,14 +197,11 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
 
-if DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
-    EMAIL_FILE_PATH = BASE_DIR.joinpath('debug_emails')
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.yandex.ru'
-    EMAIL_PORT = 465
-    EMAIL_USE_SSL = True
-    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+CELERY_BEAT_SCHEDULE = {
+    'task-name': {
+        'task': 'school.tasks.check_inactive_users',  # Путь к задаче
+        'schedule': timedelta(days=7),  # Расписание выполнения задачи (например, каждые 10 минут)
+    },
+}
+
+
