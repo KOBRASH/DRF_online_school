@@ -34,6 +34,11 @@ class CourseViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 
+    def perform_update(self, serializer):
+        course = serializer.save()
+        send_course_update_email.delay(course_id=course.id)
+
+
 class LessonCreateAPIView(generics.CreateAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, ~IsModerator]

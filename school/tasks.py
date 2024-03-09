@@ -1,9 +1,12 @@
 from celery import shared_task
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
+from school.models import Course
+
 
 @shared_task
-def send_course_update_email(user_email, course_title):
+def send_course_update_email(course_id):
+    course = Course.objects.get(pk=course_id)
     subject = 'Обновление материалов курса'
-    message = render_to_string('course_update_email.html', {'course_title': course_title})
-    send_mail(subject, message, 'from@example.com', [user_email])
+    message = f'{course.title} обновлен!'
+    reciepen_list = course.subscription_set.values_list('user__email', flat=True)
+    send_mail(subject, message, 'from@example.com', reciepen_list)
